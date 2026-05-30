@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnosa Penyakit Jagung 🌽</title>
+  <style>
+    /* === NEOBRUTALISM STYLES === */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #FFE600;
+      font-family: 'Segoe UI', 'Arial Black', sans-serif;
+      color: #000;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .container {
+      background: #fff;
+      border: 4px solid #000;
+      box-shadow: 12px 12px 0 #000;
+      max-width: 900px;
+      width: 100%;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 3rem;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      background: #FF6B6B;
+      border: 3px solid #000;
+      padding: 0.5rem;
+      color: #000;
+      box-shadow: 6px 6px 0 #000;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .disease-group {
+      margin-bottom: 2rem;
+      border: 3px solid #000;
+      padding: 1rem;
+      background: #F0F0F0;
+      box-shadow: 5px 5px 0 #000;
+    }
+    .disease-group h2 {
+      font-size: 1.8rem;
+      margin-bottom: 0.8rem;
+      background: #000;
+      color: #fff;
+      display: inline-block;
+      padding: 0.2rem 0.8rem;
+      letter-spacing: 1px;
+    }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.5rem;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fff;
+      border: 2px solid #000;
+      padding: 0.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 3px 3px 0 #000;
+      transition: all 0.05s ease;
+    }
+    .checkbox-item:has(input:checked) {
+      background: #4ECDC4;
+      color: #000;
+    }
+    .checkbox-item input {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #000;
+      background: #fff;
+      cursor: pointer;
+      position: relative;
+      margin-right: 0.3rem;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .checkbox-item input:checked::after {
+      content: '✓';
+      font-size: 18px;
+      font-weight: bold;
+      color: #000;
+      position: absolute;
+      top: -3px;
+      left: 2px;
+    }
+    .btn-submit {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      background: #FF6B6B;
+      border: 4px solid #000;
+      box-shadow: 8px 8px 0 #000;
+      cursor: pointer;
+      margin-top: 2rem;
+      color: #000;
+      letter-spacing: 2px;
+    }
+    .btn-submit:active {
+      box-shadow: 4px 4px 0 #000;
+      transform: translate(4px, 4px);
+    }
+    .result-section {
+      margin-top: 2rem;
+      border: 4px solid #000;
+      padding: 1.5rem;
+      background: #fff;
+      box-shadow: 12px 12px 0 #000;
+      display: none; /* akan ditampilkan setelah ada hasil */
+    }
+    .result-section.active {
+      display: block;
+    }
+    .diagnosis-card {
+      border: 3px solid #000;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      background: #FFE66D;
+      box-shadow: 6px 6px 0 #000;
+    }
+    .diagnosis-card h3 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      background: #000;
+      color: #fff;
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+    }
+    .diagnosis-card p {
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+    .reported {
+      background: #fff;
+      border: 2px solid #000;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .loading-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 1rem 0;
+      display: none;
+    }
+    .error-text {
+      color: #FF0000;
+      font-weight: bold;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌽 Diagnosa Jagung</h1>
+    <p class="subtitle">Pilih gejala yang muncul pada tanaman Anda</p>
+
+    <div id="symptoms-container">
+      <!-- Akan diisi oleh JavaScript -->
+      <p>Memuat gejala...</p>
+    </div>
+
+    <button id="btn-diagnose" class="btn-submit">DIAGNOSA SEKARANG!</button>
+
+    <!-- Hasil Diagnosa -->
+    <div id="result" class="result-section">
+      <h2 style="font-size:2rem; margin-bottom:1rem; background:#000; color:#fff; display:inline-block; padding:0.2rem 0.8rem;">HASIL DIAGNOSA</h2>
+      <div id="reported-symptoms" class="reported"></div>
+      <div id="diagnosis-list"></div>
+      <p style="font-weight:bold;">Total penyakit terdeteksi: <span id="total-penyakit">0</span></p>
+    </div>
+    <div id="loading" class="loading-text">🔍 Memproses...</div>
+    <div id="error-message" class="error-text"></div>
+  </div>
+
+  <script>
+    const API_BASE = '';  // Karena di-serve oleh Flask, bisa pakai relative path
+
+    // Ambil semua gejala dari API
+    async function loadSymptoms() {
+      try {
+        const response = await fetch('/api/symptoms');
+        const data = await response.json();
+        renderSymptoms(data);
+      } catch (error) {
+        document.getElementById('symptoms-container').innerHTML = '<p style="color:red; font-weight:bold;">Gagal memuat gejala. Pastikan server berjalan.</p>';
+        console.error(error);
+      }
+    }
+
+    function renderSymptoms(groups) {
+      const container = document.getElementById('symptoms-container');
+      container.innerHTML = '';
+
+      groups.forEach(group => {
+        const divGroup = document.createElement('div');
+        divGroup.className = 'disease-group';
+
+        const title = document.createElement('h2');
+        title.textContent = group.disease;
+        divGroup.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'checkbox-grid';
+
+        group.symptoms.forEach(symptom => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-item';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = symptom.code;   // contoh: "G1"
+          checkbox.name = 'gejala';        // untuk pengelompokan (opsional)
+
+          const textNode = document.createTextNode(symptom.description);
+          label.appendChild(checkbox);
+          label.appendChild(textNode);
+          grid.appendChild(label);
+        });
+
+        divGroup.appendChild(grid);
+        container.appendChild(divGroup);
+      });
+    }
+
+    // Fungsi diagnosa
+    document.getElementById('btn-diagnose').addEventListener('click', async () => {
+      const selectedCheckboxes = document.querySelectorAll('#symptoms-container input[type="checkbox"]:checked');
+      const selectedSymptoms = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (selectedSymptoms.length === 0) {
+        showError('Pilih minimal satu gejala!');
+        return;
+      }
+
+      hideResult();
+      showLoading(true);
+      hideError();
+
+      try {
+        const response = await fetch('/api/diagnose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symptoms: selectedSymptoms })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Gagal melakukan diagnosa.');
+        }
+
+        const result = await response.json();
+        displayResult(result);
+      } catch (error) {
+        showError(error.message);
+        console.error(error);
+      } finally {
+        showLoading(false);
+      }
+    });
+
+    function displayResult(data) {
+      // Tampilkan reported symptoms
+      const reportedDiv = document.getElementById('reported-symptoms');
+      reportedDiv.innerHTML = '<strong>Gejala yang dipilih:</strong><ul>' +
+        data.reported_symptoms.map(s => `<li>${s.description} (${s.code})</li>`).join('') +
+        '</ul>';
+
+      // Tampilkan diagnosis
+      const diagnosisList = document.getElementById('diagnosis-list');
+      diagnosisList.innerHTML = '';
+
+      if (data.diagnosis.length > 0) {
+        data.diagnosis.forEach(d => {
+          const card = document.createElement('div');
+          card.className = 'diagnosis-card';
+          card.innerHTML = `
+            <h3>${d.nama} (${d.code})</h3>
+            <p><strong>Deskripsi:</strong> ${d.deskripsi}</p>
+            <p><strong>Rekomendasi:</strong> ${d.rekomendasi}</p>
+          `;
+          diagnosisList.appendChild(card);
+        });
+      } else {
+        diagnosisList.innerHTML = '<p style="font-weight:bold;">Tidak ada penyakit terdeteksi dari gejala yang dipilih.</p>';
+      }
+
+      document.getElementById('total-penyakit').textContent = data.total_penyakit_terdeteksi;
+
+      // Tampilkan section hasil
+      document.getElementById('result').classList.add('active');
+    }
+
+    function hideResult() {
+      document.getElementById('result').classList.remove('active');
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+
+    function showError(msg) {
+      const errEl = document.getElementById('error-message');
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+
+    function hideError() {
+      document.getElementById('error-message').style.display = 'none';
+    }
+
+    // Inisialisasi
+    loadSymptoms();
+  </script>
+</body>
+</html>
