@@ -655,19 +655,240 @@
       transform: translate(2px, 2px);
     }
 
+    /* ========== AUTH & MODAL SYSTEM (NEOBRUTALISM) ========== */
+    .btn-auth {
+      background: var(--white);
+      color: var(--black);
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      padding: 8px 16px;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 14px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .btn-auth:hover {
+      background: var(--lime);
+      box-shadow: 2px 2px 0 var(--black);
+      transform: translate(2px, 2px);
+    }
+    .btn-auth:active {
+      box-shadow: 0px 0px 0 var(--black);
+      transform: translate(4px, 4px);
+    }
+    
+    .btn-auth.btn-admin {
+      background: var(--magenta);
+      color: var(--white);
+    }
+    .btn-auth.btn-admin:hover {
+      background: var(--cyan);
+      color: var(--black);
+    }
+
+    .btn-auth.btn-logout {
+      background: var(--red);
+      color: var(--white);
+    }
+    .btn-auth.btn-logout:hover {
+      background: var(--orange);
+    }
+
+    .user-greeting {
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      border-left: 3px solid var(--black);
+      padding-left: 12px;
+      margin-right: 8px;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: var(--white);
+      border: 4px solid var(--black);
+      box-shadow: 8px 8px 0 var(--black);
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.2s ease;
+    }
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
+    .modal-box.modal-large {
+      max-width: 800px;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--black);
+      background: var(--red);
+      color: var(--white);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 0 var(--black);
+      transition: all 0.1s;
+    }
+    .modal-close:hover {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--black);
+    }
+
+    .modal-title {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 24px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      border-bottom: 4px solid var(--black);
+      padding-bottom: 12px;
+    }
+
+    .modal-body {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .input-neobrutalist {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      outline: none;
+      background: var(--bg);
+    }
+    .input-neobrutalist:focus {
+      background: var(--white);
+      box-shadow: 2px 2px 0 var(--black);
+      transform: translate(2px, 2px);
+    }
+
+    .modal-footer-text {
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .modal-footer-text a {
+      color: var(--blue);
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    /* Admin Table Styling */
+    .table-container {
+      overflow-x: auto;
+      border: 3px solid var(--black);
+      box-shadow: 4px 4px 0 var(--black);
+      margin-top: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      background: var(--white);
+    }
+    .admin-table th, .admin-table td {
+      border: 2px solid var(--black);
+      padding: 12px 16px;
+      text-align: left;
+    }
+    .admin-table th {
+      background: var(--yellow);
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 12px;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .admin-table tr:nth-child(even) {
+      background: var(--bg);
+    }
+    .badge-role {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: 'Archivo Black', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      border: 2px solid var(--black);
+      box-shadow: 2px 2px 0 var(--black);
+    }
+    .badge-role.role-admin {
+      background: var(--magenta);
+      color: var(--white);
+    }
+    .badge-role.role-user {
+      background: var(--lime);
+      color: var(--black);
+    }
+
     /* ========== RESPONSIVE ========== */
     @media (max-width: 768px) {
       .hero { flex-direction: column; padding: 32px 16px; }
       .hero h1 { font-size: 48px; }
       .hero-icon-box { width: 100px; height: 100px; font-size: 48px; }
       .main-wrapper { padding: 24px 16px 80px; }
-      .navbar { padding: 12px 16px; }
+      .navbar { padding: 12px 16px; flex-direction: column; gap: 12px; align-items: stretch; text-align: center; }
+      .navbar .logo { justify-content: center; }
+      .navbar .nav-right { justify-content: center; width: 100%; }
       .diagnosis-card-body { grid-template-columns: 1fr; }
       .result-header { flex-direction: column; align-items: flex-start; gap: 12px; }
       .result-title { font-size: 26px; }
       .btn-submit { font-size: 20px; padding: 18px; }
       .checkbox-grid { grid-template-columns: 1fr; }
       .confidence-bar-track { width: 80px; }
+      .modal-box { padding: 20px; width: 95%; }
+      .admin-table th, .admin-table td { padding: 8px 10px; font-size: 13px; }
+      .user-greeting { border-left: none; padding-left: 0; display: block; margin-bottom: 6px; }
     }
   </style>
 </head>
@@ -679,7 +900,12 @@
       <span class="logo-dot"></span>
       JAGUNG<span style="font-weight:400; font-family: 'Space Grotesk'">expert</span>
     </div>
-    <span class="nav-badge">🤖 ML-Powered</span>
+    <div class="nav-right" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span class="nav-badge">🤖 ML-Powered</span>
+      <div id="auth-nav-container" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <!-- Diload dinamis via JavaScript -->
+      </div>
+    </div>
   </nav>
 
   <!-- HERO -->
@@ -766,6 +992,95 @@
     <span>© 2025 Sistem Pakar Penyakit Jagung</span>
     <span class="footer-ml-badge">Random Forest · scikit-learn</span>
   </footer>
+
+  <!-- MODAL REGISTER -->
+  <div id="modal-register" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-register')">×</button>
+      <h3 class="modal-title">Daftar Akun</h3>
+      <div class="modal-body">
+        <form id="form-register" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <input type="text" id="reg-username" class="input-neobrutalist" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" class="input-neobrutalist" required>
+          </div>
+          <button type="submit" class="btn-submit" style="margin-top: 10px; padding: 14px; font-size: 18px; box-shadow: 4px 4px 0 var(--black);">DAFTAR SEKARANG</button>
+        </form>
+        <div class="alert-error" id="reg-error" style="margin-top:16px;">
+          <span style="font-size:20px;">⚠️</span>
+          <span id="reg-error-text"></span>
+        </div>
+        <div id="reg-success" style="display:none; background:var(--lime); border:3px solid var(--black); box-shadow:4px 4px 0 var(--black); padding:16px; margin-top:16px; font-weight:700; text-transform: uppercase;">
+          🎉 Registrasi berhasil! Mengalihkan ke login...
+        </div>
+      </div>
+      <div class="modal-footer-text">
+        Sudah punya akun? <a onclick="switchModal('modal-register', 'modal-login')">Masuk di sini</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL LOGIN -->
+  <div id="modal-login" class="modal-overlay">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('modal-login')">×</button>
+      <h3 class="modal-title">Masuk Akun</h3>
+      <div class="modal-body">
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" class="input-neobrutalist" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" class="input-neobrutalist" required>
+          </div>
+          <button type="submit" class="btn-submit" style="margin-top: 10px; padding: 14px; font-size: 18px; box-shadow: 4px 4px 0 var(--black);">MASUK</button>
+        </form>
+        <div class="alert-error" id="login-error" style="margin-top:16px;">
+          <span style="font-size:20px;">⚠️</span>
+          <span id="login-error-text"></span>
+        </div>
+      </div>
+      <div class="modal-footer-text">
+        Belum punya akun? <a onclick="switchModal('modal-login', 'modal-register')">Daftar di sini</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ADMIN (USER MANAGEMENT) -->
+  <div id="modal-admin" class="modal-overlay">
+    <div class="modal-box modal-large">
+      <button class="modal-close" onclick="closeModal('modal-admin')">×</button>
+      <h3 class="modal-title">Admin Panel — Manajemen User</h3>
+      <div class="modal-body">
+        <p style="font-weight:600; margin-bottom:12px;">Berikut adalah data pengguna yang terdaftar di sistem pakar:</p>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Tanggal Registrasi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body">
+              <!-- Baris data user akan dimuat dinamis -->
+            </tbody>
+          </table>
+        </div>
+        <div class="alert-error" id="admin-error" style="margin-top:16px;">
+          <span style="font-size:20px;">⚠️</span>
+          <span id="admin-error-text"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ============= STATE =============
@@ -1019,8 +1334,205 @@
       document.getElementById('error-message').classList.remove('active');
     }
 
+    // ============= AUTH & ADMIN LOGIC =============
+    let currentUser = null;
+
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+      if (modalId === 'modal-admin') {
+        loadUsers();
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+      // Reset forms and errors when closed
+      if (modalId === 'modal-login') {
+        document.getElementById('form-login').reset();
+        document.getElementById('login-error').classList.remove('active');
+      } else if (modalId === 'modal-register') {
+        document.getElementById('form-register').reset();
+        document.getElementById('reg-error').classList.remove('active');
+        document.getElementById('reg-success').style.display = 'none';
+      } else if (modalId === 'modal-admin') {
+        document.getElementById('admin-error').classList.remove('active');
+      }
+    }
+
+    function switchModal(fromId, toId) {
+      closeModal(fromId);
+      setTimeout(() => {
+        openModal(toId);
+      }, 200);
+    }
+
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session');
+        const data = await res.json();
+        if (data.logged_in) {
+          currentUser = data.user;
+        } else {
+          currentUser = null;
+        }
+        updateNavbar();
+      } catch (err) {
+        console.error('Gagal mengecek sesi:', err);
+      }
+    }
+
+    function updateNavbar() {
+      const container = document.getElementById('auth-nav-container');
+      if (!container) return;
+
+      if (!currentUser) {
+        container.innerHTML = `
+          <button class="btn-auth" onclick="openModal('modal-login')">Masuk</button>
+          <button class="btn-auth" onclick="openModal('modal-register')" style="background:var(--lime);">Daftar</button>
+        `;
+      } else {
+        let adminBtn = '';
+        if (currentUser.role === 'admin') {
+          adminBtn = `<button class="btn-auth btn-admin" onclick="openModal('modal-admin')">Admin Panel</button>`;
+        }
+        container.innerHTML = `
+          <span class="user-greeting">Halo, ${currentUser.username}</span>
+          ${adminBtn}
+          <button class="btn-auth btn-logout" onclick="handleLogout()">Keluar</button>
+        `;
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('reg-username').value;
+      const passwordInput = document.getElementById('reg-password').value;
+      const errorDiv = document.getElementById('reg-error');
+      const errorText = document.getElementById('reg-error-text');
+      const successDiv = document.getElementById('reg-success');
+
+      errorDiv.classList.remove('active');
+      successDiv.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mendaftar.');
+        }
+
+        successDiv.style.display = 'block';
+        document.getElementById('form-register').reset();
+        setTimeout(() => {
+          switchModal('modal-register', 'modal-login');
+        }, 1500);
+      } catch (err) {
+        errorText.textContent = err.message;
+        errorDiv.classList.add('active');
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login-username').value;
+      const passwordInput = document.getElementById('login-password').value;
+      const errorDiv = document.getElementById('login-error');
+      const errorText = document.getElementById('login-error-text');
+
+      errorDiv.classList.remove('active');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameInput, password: passwordInput })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal login.');
+        }
+
+        currentUser = data.user;
+        updateNavbar();
+        closeModal('modal-login');
+      } catch (err) {
+        errorText.textContent = err.message;
+        errorDiv.classList.add('active');
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        currentUser = null;
+        updateNavbar();
+        // Redirect ke home / reset diagnosa jika perlu
+        document.getElementById('btn-reset').click();
+      } catch (err) {
+        console.error('Gagal logout:', err);
+      }
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById('admin-table-body');
+      const errorDiv = document.getElementById('admin-error');
+      const errorText = document.getElementById('admin-error-text');
+
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data user...</td></tr>';
+      errorDiv.classList.remove('active');
+
+      try {
+        const res = await fetch('/api/auth/users');
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Gagal memuat data user.');
+        }
+
+        const users = await res.json();
+        tbody.innerHTML = '';
+        if (users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada user terdaftar.</td></tr>';
+          return;
+        }
+
+        users.forEach(u => {
+          const tr = document.createElement('tr');
+          const roleClass = u.role === 'admin' ? 'role-admin' : 'role-user';
+          
+          // Format tanggal agar lebih rapi
+          const regDate = new Date(u.created_at);
+          const formattedDate = regDate.toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          tr.innerHTML = `
+            <td>${u.id}</td>
+            <td>${u.username}</td>
+            <td><span class="badge-role ${roleClass}">${u.role}</span></td>
+            <td>${formattedDate}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--red);">Gagal memuat data.</td></tr>';
+        errorText.textContent = err.message;
+        errorDiv.classList.add('active');
+      }
+    }
+
     // ============= INIT =============
     loadSymptoms();
+    checkSession();
   </script>
 </body>
 </html>
