@@ -1,4 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
+import sqlite3
+import json
 from app.services.disease_repo import DiseaseRepository
 from app.services.knowledge_base import KnowledgeBase
 from app.services.inference import InferenceEngine
@@ -54,6 +56,9 @@ def diagnose():
     Contoh body: { "symptoms": ["G1", "G4", "G10"] }
     Menggunakan ML (Random Forest) untuk diagnosis dengan confidence score.
     """
+    if 'user_id' not in session:
+        return jsonify({'error': 'Akses ditolak. Anda harus login terlebih dahulu untuk melakukan diagnosa.'}), 401
+
     data = request.get_json()
     if not data or 'symptoms' not in data:
         return jsonify({'error': 'Harap sertakan "symptoms" dalam body.'}), 400
@@ -109,7 +114,76 @@ def diagnose():
         'forward_chain_codes': penyakit_fc,
         'ml_active': ml_classifier.is_trained
     }
+
+    # Simpan riwayat jika user sudah login
+    if 'user_id' in session:
+        try:
+            conn = sqlite3.connect(Config.DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO diagnoses (user_id, symptoms, result) VALUES (?, ?, ?)",
+                (session['user_id'], json.dumps(reported_symptoms), json.dumps(hasil))
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Error saving diagnosis: {e}")
+
     return jsonify(response)
+
+
+@api_bp.route('/diagnoses', methods=['GET'])
+def get_diagnoses():
+    """Mengembalikan daftar riwayat diagnosa user yang sedang login."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Akses ditolak. Harap login terlebih dahulu.'}), 401
+    
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, symptoms, result, created_at FROM diagnoses WHERE user_id = ? ORDER BY created_at DESC",
+            (session['user_id'],)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        history = []
+        for r in rows:
+            history.append({
+                'id': r['id'],
+                'symptoms': json.loads(r['symptoms']),
+                'result': json.loads(r['result']),
+                'created_at': r['created_at']
+            })
+        return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': f'Gagal mengambil riwayat: {str(e)}'}), 500
+
+
+@api_bp.route('/diagnoses/<int:diagnose_id>', methods=['DELETE'])
+def delete_diagnose(diagnose_id):
+    """Menghapus entri riwayat diagnosa."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Akses ditolak. Harap login terlebih dahulu.'}), 401
+        
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Pastikan data milik user tersebut
+        cursor.execute("SELECT id FROM diagnoses WHERE id = ? AND user_id = ?", (diagnose_id, session['user_id']))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'Riwayat tidak ditemukan atau tidak memiliki akses.'}), 404
+            
+        cursor.execute("DELETE FROM diagnoses WHERE id = ? AND user_id = ?", (diagnose_id, session['user_id']))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Riwayat diagnosa berhasil dihapus.'})
+    except Exception as e:
+        return jsonify({'error': f'Gagal menghapus riwayat: {str(e)}'}), 500
 
 
 @api_bp.route('/ml-status', methods=['GET'])
