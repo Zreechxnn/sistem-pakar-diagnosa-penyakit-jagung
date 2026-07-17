@@ -11,6 +11,10 @@ def create_app():
     from app.routes.api import api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
 
+    # Register Auth blueprint
+    from app.routes.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+
     # Route untuk frontend
     @app.route('/')
     def index():
