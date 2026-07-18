@@ -1,8 +1,11 @@
+import sqlite3
 from typing import List
+from config import Config
 
 class Rule:
     """Merepresentasikan satu aturan: IF antecedents THEN consequent."""
-    def __init__(self, antecedents: List[str], consequent: str):
+    def __init__(self, antecedents: List[str], consequent: str, rule_id: int = None):
+        self.id = rule_id
         self.antecedents = antecedents
         self.consequent = consequent
 
@@ -14,30 +17,67 @@ class Rule:
 
 
 class KnowledgeBase:
-    """Membaca dan menyimpan aturan dari file teks."""
-    def __init__(self, file_path: str):
-        self.rules: List[Rule] = self._load_rules(file_path)
-
-    def _load_rules(self, file_path: str) -> List[Rule]:
-        rules = []
-        try:
-            with open(file_path, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    # Abaikan baris kosong dan komentar
-                    if not line or line.startswith('#'):
-                        continue
-                    # Format: antecedent1,antecedent2-consequent
-                    if '-' not in line:
-                        continue
-                    ant_part, cons = line.split('-', 1)
-                    antecedents = [a.strip() for a in ant_part.split(',') if a.strip()]
-                    consequent = cons.strip()
-                    if antecedents and consequent:
-                        rules.append(Rule(antecedents, consequent))
-        except FileNotFoundError:
-            print(f"Warning: Knowledge base file '{file_path}' not found.")
-        return rules
+    """Membaca dan menyimpan aturan dari database SQLite."""
+    def __init__(self, file_path: str = None):
+        # file_path parameter kept for backward compatibility if instantiated elsewhere
+        pass
 
     def get_rules(self) -> List[Rule]:
-        return self.rules
+        rules = []
+        try:
+            conn = sqlite3.connect(Config.DATABASE_PATH)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, antecedents, consequent FROM rules ORDER BY id ASC")
+            rows = cursor.fetchall()
+            conn.close()
+
+            for row in rows:
+                antecedents = [a.strip() for a in row['antecedents'].split(',') if a.strip()]
+                rules.append(Rule(antecedents, row['consequent'], row['id']))
+        except Exception as e:
+            print(f"Error loading rules from db: {e}")
+        return rules
+
+    # API CRUD Helper Methods
+    def add_rule(self, antecedents: str, consequent: str) -> bool:
+        try:
+            conn = sqlite3.connect(Config.DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO rules (antecedents, consequent) VALUES (?, ?)",
+                (antecedents, consequent)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error adding rule: {e}")
+            return False
+
+    def update_rule(self, rule_id: int, antecedents: str, consequent: str) -> bool:
+        try:
+            conn = sqlite3.connect(Config.DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE rules SET antecedents = ?, consequent = ? WHERE id = ?",
+                (antecedents, consequent, rule_id)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating rule: {e}")
+            return False
+
+    def delete_rule(self, rule_id: int) -> bool:
+        try:
+            conn = sqlite3.connect(Config.DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error deleting rule: {e}")
+            return False

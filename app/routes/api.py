@@ -193,3 +193,244 @@ def ml_status():
         'is_trained': ml_classifier.is_trained,
         'error': ml_classifier.training_error
     })
+
+
+# =====================================================================
+# ADMIN PANEL ENDPOINTS
+# =====================================================================
+
+def is_admin():
+    return 'user_id' in session and session.get('role') == 'admin'
+
+# 1. Kelola Gejala (Symptoms)
+@api_bp.route('/admin/symptoms', methods=['GET'])
+def admin_get_symptoms():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, code, description, disease_name FROM symptoms ORDER BY id ASC")
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/symptoms', methods=['POST'])
+def admin_add_symptom():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'code' not in data or 'description' not in data or 'disease_name' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    code = data['code'].strip().upper()
+    description = data['description'].strip()
+    disease_name = data['disease_name'].strip()
+
+    if not code or not description or not disease_name:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if repo.add_symptom(code, description, disease_name):
+        return jsonify({'message': 'Gejala berhasil ditambahkan.'}), 201
+    return jsonify({'error': 'Gagal menambahkan gejala. Kode mungkin sudah terdaftar.'}), 400
+
+@api_bp.route('/admin/symptoms/<string:code>', methods=['PUT'])
+def admin_update_symptom(code):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'description' not in data or 'disease_name' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    description = data['description'].strip()
+    disease_name = data['disease_name'].strip()
+
+    if not description or not disease_name:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if repo.update_symptom(code, description, disease_name):
+        return jsonify({'message': 'Gejala berhasil diperbarui.'})
+    return jsonify({'error': 'Gagal memperbarui gejala.'}), 400
+
+@api_bp.route('/admin/symptoms/<string:code>', methods=['DELETE'])
+def admin_delete_symptom(code):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    if repo.delete_symptom(code):
+        return jsonify({'message': 'Gejala berhasil dihapus.'})
+    return jsonify({'error': 'Gagal menghapus gejala.'}), 400
+
+
+# 2. Kelola Penyakit (Diseases)
+@api_bp.route('/admin/diseases', methods=['GET'])
+def admin_get_diseases():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, code, name, description, recommendation FROM diseases ORDER BY id ASC")
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/diseases', methods=['POST'])
+def admin_add_disease():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'code' not in data or 'name' not in data or 'description' not in data or 'recommendation' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    code = data['code'].strip().upper()
+    name = data['name'].strip()
+    description = data['description'].strip()
+    recommendation = data['recommendation'].strip()
+
+    if not code or not name or not description or not recommendation:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if repo.add_disease(code, name, description, recommendation):
+        return jsonify({'message': 'Penyakit berhasil ditambahkan.'}), 201
+    return jsonify({'error': 'Gagal menambahkan penyakit. Kode mungkin sudah terdaftar.'}), 400
+
+@api_bp.route('/admin/diseases/<string:code>', methods=['PUT'])
+def admin_update_disease(code):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'name' not in data or 'description' not in data or 'recommendation' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    name = data['name'].strip()
+    description = data['description'].strip()
+    recommendation = data['recommendation'].strip()
+
+    if not name or not description or not recommendation:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if repo.update_disease(code, name, description, recommendation):
+        return jsonify({'message': 'Penyakit berhasil diperbarui.'})
+    return jsonify({'error': 'Gagal memperbarui penyakit.'}), 400
+
+@api_bp.route('/admin/diseases/<string:code>', methods=['DELETE'])
+def admin_delete_disease(code):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    if repo.delete_disease(code):
+        return jsonify({'message': 'Penyakit berhasil dihapus.'})
+    return jsonify({'error': 'Gagal menghapus penyakit.'}), 400
+
+
+# 3. Kelola Aturan (Rules)
+@api_bp.route('/admin/rules', methods=['GET'])
+def admin_get_rules():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, antecedents, consequent FROM rules ORDER BY id ASC")
+        rows = cursor.fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/rules', methods=['POST'])
+def admin_add_rule():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'antecedents' not in data or 'consequent' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    antecedents = data['antecedents'].strip()
+    consequent = data['consequent'].strip().upper()
+
+    if not antecedents or not consequent:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if kb.add_rule(antecedents, consequent):
+        return jsonify({'message': 'Aturan berhasil ditambahkan.'}), 201
+    return jsonify({'error': 'Gagal menambahkan aturan.'}), 400
+
+@api_bp.route('/admin/rules/<int:rule_id>', methods=['PUT'])
+def admin_update_rule(rule_id):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'antecedents' not in data or 'consequent' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    antecedents = data['antecedents'].strip()
+    consequent = data['consequent'].strip().upper()
+
+    if not antecedents or not consequent:
+        return jsonify({'error': 'Field tidak boleh kosong.'}), 400
+
+    if kb.update_rule(rule_id, antecedents, consequent):
+        return jsonify({'message': 'Aturan berhasil diperbarui.'})
+    return jsonify({'error': 'Gagal memperbarui aturan.'}), 400
+
+@api_bp.route('/admin/rules/<int:rule_id>', methods=['DELETE'])
+def admin_delete_rule(rule_id):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    if kb.delete_rule(rule_id):
+        return jsonify({'message': 'Aturan berhasil dihapus.'})
+    return jsonify({'error': 'Gagal menghapus aturan.'}), 400
+
+
+# 4. Tampilkan data user dan hasil diagnosa tiap user
+@api_bp.route('/admin/user-diagnoses', methods=['GET'])
+def admin_get_user_diagnoses():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT d.id, d.user_id, u.username, d.symptoms, d.result, d.created_at 
+               FROM diagnoses d 
+               JOIN users u ON d.user_id = u.id 
+               ORDER BY d.created_at DESC"""
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        diagnoses = []
+        for r in rows:
+            diagnoses.append({
+                'id': r['id'],
+                'user_id': r['user_id'],
+                'username': r['username'],
+                'symptoms': json.loads(r['symptoms']),
+                'result': json.loads(r['result']),
+                'created_at': r['created_at']
+            })
+        return jsonify(diagnoses)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/admin/user-diagnoses/<int:diagnose_id>', methods=['DELETE'])
+def admin_delete_user_diagnose(diagnose_id):
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM diagnoses WHERE id = ?", (diagnose_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Hasil diagnosa user berhasil dihapus.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

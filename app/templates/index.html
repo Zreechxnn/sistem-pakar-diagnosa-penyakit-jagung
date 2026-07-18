@@ -186,28 +186,207 @@
     </div>
   </div>
 
-  <!-- MODAL ADMIN (USER MANAGEMENT) -->
+  <!-- MODAL ADMIN (DASHBOARD) -->
   <div id="modal-admin" class="modal-overlay">
     <div class="modal-box modal-large">
       <button class="modal-close" onclick="closeModal('modal-admin')">×</button>
-      <h3 class="modal-title">Admin Panel — Manajemen User</h3>
+      <h3 class="modal-title">Admin Dashboard</h3>
       <div class="modal-body">
-        <p style="font-weight:600; margin-bottom:12px;">Berikut adalah data pengguna yang terdaftar di sistem pakar:</p>
-        <div class="table-container">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Tanggal Registrasi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-table-body">
-              <!-- Baris data user akan dimuat dinamis -->
-            </tbody>
-          </table>
+        
+        <div class="admin-tabs-container">
+          <div class="admin-tabs-header">
+            <button class="admin-tab-btn active" onclick="switchAdminTab('tab-users')">👥 User & Diagnosa</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tab-symptoms')">🌡️ Gejala</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tab-diseases')">🌽 Penyakit</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tab-rules')">⛓️ Aturan (Rule)</button>
+          </div>
+
+          <!-- TAB USERS & DIAGNOSES -->
+          <div id="tab-users" class="admin-tab-content active">
+            <h4 class="admin-sub-title">Daftar User Terdaftar</h4>
+            <div class="table-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Tanggal Registrasi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-table-body">
+                  <!-- Baris data user akan dimuat dinamis -->
+                </tbody>
+              </table>
+            </div>
+
+            <h4 class="admin-sub-title">Hasil Diagnosa Semua Pengguna</h4>
+            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Pengguna</th>
+                    <th>Gejala Dilaporkan</th>
+                    <th>Hasil Analisis</th>
+                    <th>Tanggal Diagnosa</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-diagnoses-table-body">
+                  <!-- Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB SYMPTOMS -->
+          <div id="tab-symptoms" class="admin-tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+              <h4 class="admin-sub-title" style="margin-bottom:0;">Daftar Gejala</h4>
+              <button class="btn-action" style="background:var(--lime);" onclick="openAddSymptomForm()">➕ Tambah Gejala</button>
+            </div>
+
+            <!-- Form Add/Edit Symptom -->
+            <div id="symptom-form-container" class="admin-form-box" style="display:none;">
+              <h5 id="symptom-form-title">Tambah Gejala Baru</h5>
+              <form id="form-manage-symptom" onsubmit="saveSymptom(event)">
+                <input type="hidden" id="symptom-action" value="add">
+                <div class="form-group">
+                  <label for="symptom-code">Kode Gejala (Contoh: G33)</label>
+                  <input type="text" id="symptom-code" class="input-neobrutalist" placeholder="G33" required>
+                </div>
+                <div class="form-group">
+                  <label for="symptom-desc">Deskripsi Gejala</label>
+                  <input type="text" id="symptom-desc" class="input-neobrutalist" placeholder="Deskripsi..." required>
+                </div>
+                <div class="form-group">
+                  <label for="symptom-disease">Nama Penyakit (Kelompok)</label>
+                  <input type="text" id="symptom-disease" class="input-neobrutalist" placeholder="Bulai, Blight, dll." required>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:12px;">
+                  <button type="submit" class="btn-action" style="background:var(--yellow);">Simpan</button>
+                  <button type="button" class="btn-action" style="background:var(--gray);" onclick="closeSymptomForm()">Batal</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Deskripsi</th>
+                    <th>Kelompok Penyakit</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-sy-table-body">
+                  <!-- Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB DISEASES -->
+          <div id="tab-diseases" class="admin-tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+              <h4 class="admin-sub-title" style="margin-bottom:0;">Daftar Penyakit</h4>
+              <button class="btn-action" style="background:var(--lime);" onclick="openAddDiseaseForm()">➕ Tambah Penyakit</button>
+            </div>
+
+            <!-- Form Add/Edit Disease -->
+            <div id="disease-form-container" class="admin-form-box" style="display:none;">
+              <h5 id="disease-form-title">Tambah Penyakit Baru</h5>
+              <form id="form-manage-disease" onsubmit="saveDisease(event)">
+                <input type="hidden" id="disease-action" value="add">
+                <div class="form-group">
+                  <label for="disease-code">Kode Penyakit (Contoh: P007)</label>
+                  <input type="text" id="disease-code" class="input-neobrutalist" placeholder="P007" required>
+                </div>
+                <div class="form-group">
+                  <label for="disease-name">Nama Penyakit</label>
+                  <input type="text" id="disease-name" class="input-neobrutalist" placeholder="Nama..." required>
+                </div>
+                <div class="form-group">
+                  <label for="disease-desc">Deskripsi</label>
+                  <textarea id="disease-desc" class="input-neobrutalist" style="height:60px; resize:vertical;" placeholder="Deskripsi..." required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="disease-reco">Rekomendasi</label>
+                  <textarea id="disease-reco" class="input-neobrutalist" style="height:60px; resize:vertical;" placeholder="Rekomendasi..." required></textarea>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:12px;">
+                  <button type="submit" class="btn-action" style="background:var(--yellow);">Simpan</button>
+                  <button type="button" class="btn-action" style="background:var(--gray);" onclick="closeDiseaseForm()">Batal</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Kode</th>
+                    <th>Nama Penyakit</th>
+                    <th>Deskripsi</th>
+                    <th>Rekomendasi</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-di-table-body">
+                  <!-- Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB RULES -->
+          <div id="tab-rules" class="admin-tab-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+              <h4 class="admin-sub-title" style="margin-bottom:0;">Aturan Forward Chaining</h4>
+              <button class="btn-action" style="background:var(--lime);" onclick="openAddRuleForm()">➕ Tambah Aturan</button>
+            </div>
+
+            <!-- Form Add/Edit Rule -->
+            <div id="rule-form-container" class="admin-form-box" style="display:none;">
+              <h5 id="rule-form-title">Tambah Aturan Baru</h5>
+              <form id="form-manage-rule" onsubmit="saveRule(event)">
+                <input type="hidden" id="rule-action" value="add">
+                <input type="hidden" id="rule-id" value="">
+                <div class="form-group">
+                  <label for="rule-antecedents">IF (Gejala, pisahkan koma. Contoh: G1,G2)</label>
+                  <input type="text" id="rule-antecedents" class="input-neobrutalist" placeholder="G1,G2" required>
+                </div>
+                <div class="form-group">
+                  <label for="rule-consequent">THEN (Penyakit/Gejala, contoh: P001)</label>
+                  <input type="text" id="rule-consequent" class="input-neobrutalist" placeholder="P001" required>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:12px;">
+                  <button type="submit" class="btn-action" style="background:var(--yellow);">Simpan</button>
+                  <button type="button" class="btn-action" style="background:var(--gray);" onclick="closeRuleForm()">Batal</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>IF (Antecedent)</th>
+                    <th>THEN (Consequent)</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-ru-table-body">
+                  <!-- Dinamis -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
         <div class="alert-error" id="admin-error" style="margin-top:16px;">
           <span style="font-size:20px;">⚠️</span>
           <span id="admin-error-text"></span>
@@ -215,6 +394,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- MODAL HISTORY (DIAGNOSIS HISTORY) -->
   <div id="modal-history" class="modal-overlay">

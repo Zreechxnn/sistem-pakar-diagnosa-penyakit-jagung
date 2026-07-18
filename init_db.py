@@ -46,6 +46,56 @@ def init_db():
         print("User 'user' berhasil dibuat (password: user123).")
     else:
         print("User 'user' sudah ada.")
+
+    # Seed symptoms jika belum ada
+    cursor.execute("SELECT COUNT(*) FROM symptoms")
+    if cursor.fetchone()[0] == 0:
+        try:
+            from app.services.disease_repo import DiseaseRepository
+            repo = DiseaseRepository()
+            kode = 1
+            for disease_name, symptoms in repo.get_symptom_groups():
+                for symptom in symptoms:
+                    cursor.execute(
+                        "INSERT INTO symptoms (code, description, disease_name) VALUES (?, ?, ?)",
+                        (f'G{kode}', symptom, disease_name)
+                    )
+                    kode += 1
+            print("Data gejala (symptoms) berhasil di-seed.")
+        except Exception as e:
+            print(f"Gagal seeding symptoms: {e}")
+
+    # Seed diseases jika belum ada
+    cursor.execute("SELECT COUNT(*) FROM diseases")
+    if cursor.fetchone()[0] == 0:
+        try:
+            from app.services.disease_repo import DiseaseRepository
+            repo = DiseaseRepository()
+            for code, info in repo._disease_details.items():
+                cursor.execute(
+                    "INSERT INTO diseases (code, name, description, recommendation) VALUES (?, ?, ?, ?)",
+                    (code, info['nama'], info['deskripsi'], info['rekomendasi'])
+                )
+            print("Data penyakit (diseases) berhasil di-seed.")
+        except Exception as e:
+            print(f"Gagal seeding diseases: {e}")
+
+    # Seed rules jika belum ada
+    cursor.execute("SELECT COUNT(*) FROM rules")
+    if cursor.fetchone()[0] == 0:
+        try:
+            from app.services.knowledge_base import KnowledgeBase
+            kb = KnowledgeBase(Config.KNOWLEDGE_BASE_PATH)
+            for r in kb.get_rules():
+                antecedents_str = ",".join(r.get_antecedents())
+                consequent = r.get_consequent()
+                cursor.execute(
+                    "INSERT INTO rules (antecedents, consequent) VALUES (?, ?)",
+                    (antecedents_str, consequent)
+                )
+            print("Data aturan (rules) berhasil di-seed.")
+        except Exception as e:
+            print(f"Gagal seeding rules: {e}")
         
     conn.commit()
     conn.close()

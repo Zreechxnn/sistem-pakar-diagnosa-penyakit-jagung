@@ -1,61 +1,10 @@
+import sqlite3
 from typing import List, Tuple, Dict
+from config import Config
 
 class DiseaseRepository:
     def __init__(self):
-        self._symptom_groups: List[Tuple[str, List[str]]] = [
-            ('Bulai', [
-                'Daun jagung berubah menjadi warna klorotik',
-                'Pertumbuhan tanaman mengalami hambatan',
-                'Terdapat warna putih seperti tepung pada permukaan daun',
-                'Daun menggulung dan terpuntir',
-                'Pembentukan tongkol terganggu'
-            ]),
-            ('Blight', [
-                'Daun terlihat layu',
-                'Terdapat bercak kecil yang bersatu membentuk bercak yang lebih besar',
-                'Bercak berwarna coklat muda dan berbentuk memanjang menyerupai kumparan atau perahu',
-                'Terdapat bercak berwarna coklat berbentuk elips',
-                'Daun terlihat kering'
-            ]),
-            ('Leaf Rust', [
-                'Daun jagung terlihat kering',
-                'Terdapat bercak-bercak kecil berwarna coklat atau kuning pada permukaan daun',
-                'Terdapat bercak merah pada tulang daun',
-                'Muncul benang tidak beraturan yang awalnya berwarna putih, lalu berubah menjadi coklat',
-                'Daun mengeluarkan serbuk yang menyerupai tepung berwarna kuning kecoklatan'
-            ]),
-            ('Burn', [
-                'Terdapat pembengkakan pada tongkol jagung',
-                'Muncul jamur berwarna putih hingga hitam pada biji jagung',
-                'Biji jagung terlihat menggembung',
-                'Terdapat kelenjar yang terbentuk pada biji',
-                'Kelobot (lapisan luar tongkol) terbuka, dan muncul banyak jamur berwarna putih hingga hitam'
-            ]),
-            ('Stem Borer', [
-                'Terdapat lubang kecil pada daun',
-                'Terdapat celah pada batang',
-                'Bunga jantan atau pangkal tongkol terlihat rusak',
-                'Batang dan tassel (bunga jantan) mudah patah',
-                'Terdapat tumpukan tassel yang patah',
-                'Bunga jantan tidak terbentuk',
-                'Terdapat serbuk/dirt di sekitar pangkal tongkol',
-                'Daun terlihat agak kuning'
-            ]),
-            ('Cob Borer', [
-                'Terdapat lubang melintang pada daun saat fase vegetatif',
-                'Rambut tongkol jagung terlihat terpotong atau mengering',
-                'Ujung tongkol terlihat berlubang atau terdapat gerekan',
-                'Sering ditemukan larva di sekitar tongkol'
-            ])
-        ]
-
-        self._gejala_map: Dict[str, str] = {}
-        idx = 1
-        for _, symptoms in self._symptom_groups:
-            for symptom in symptoms:
-                self._gejala_map[f"G{idx}"] = symptom
-                idx += 1
-
+        # Fallback/cache details in case DB queries fail or during init
         self._disease_details: Dict[str, Dict[str, str]] = {
             'P001': {
                 'nama': 'Bulai',
@@ -89,13 +38,63 @@ class DiseaseRepository:
             }
         }
 
+    def _get_conn(self):
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
     def get_symptom_groups(self) -> List[Tuple[str, List[str]]]:
-        return self._symptom_groups
+        """Mengembalikan semua gejala dikelompokkan per penyakit."""
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT code, description, disease_name FROM symptoms ORDER BY id ASC")
+            rows = cursor.fetchall()
+            conn.close()
+
+            # Group by disease name
+            groups_dict = {}
+            for r in rows:
+                d_name = r['disease_name']
+                desc = r['description']
+                if d_name not in groups_dict:
+                    groups_dict[d_name] = []
+                groups_dict[d_name].append(desc)
+
+            return list(groups_dict.items())
+        except Exception as e:
+            print(f"Error fetching symptom groups: {e}")
+            # Fallback jika terjadi error
+            return []
 
     def get_gejala_description(self, kode: str) -> str:
-        return self._gejala_map.get(kode, f"Gejala tidak dikenal ({kode})")
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT description FROM symptoms WHERE code = ?", (kode,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return row['description']
+        except Exception as e:
+            print(f"Error fetching symptom description: {e}")
+        return f"Gejala tidak dikenal ({kode})"
 
     def get_disease_info(self, kode: str) -> dict:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, description, recommendation FROM diseases WHERE code = ?", (kode,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return {
+                    'nama': row['name'],
+                    'deskripsi': row['description'],
+                    'rekomendasi': row['recommendation']
+                }
+        except Exception as e:
+            print(f"Error fetching disease info: {e}")
         return self._disease_details.get(kode, {
             'nama': kode,
             'deskripsi': 'Informasi tidak tersedia.',
@@ -104,4 +103,98 @@ class DiseaseRepository:
 
     def get_all_symptoms_with_codes(self) -> List[Dict[str, str]]:
         """Mengembalikan daftar semua gejala dengan kode dan deskripsinya."""
-        return [{'code': k, 'description': v} for k, v in self._gejala_map.items()]
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT code, description FROM symptoms ORDER BY id ASC")
+            rows = cursor.fetchall()
+            conn.close()
+            return [{'code': r['code'], 'description': r['description']} for r in rows]
+        except Exception as e:
+            print(f"Error fetching all symptoms: {e}")
+            return []
+
+    # API CRUD Helper Methods
+    def add_symptom(self, code: str, description: str, disease_name: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO symptoms (code, description, disease_name) VALUES (?, ?, ?)",
+                (code, description, disease_name)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error adding symptom: {e}")
+            return False
+
+    def update_symptom(self, code: str, description: str, disease_name: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE symptoms SET description = ?, disease_name = ? WHERE code = ?",
+                (description, disease_name, code)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating symptom: {e}")
+            return False
+
+    def delete_symptom(self, code: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM symptoms WHERE code = ?", (code,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error deleting symptom: {e}")
+            return False
+
+    def add_disease(self, code: str, name: str, description: str, recommendation: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO diseases (code, name, description, recommendation) VALUES (?, ?, ?, ?)",
+                (code, name, description, recommendation)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error adding disease: {e}")
+            return False
+
+    def update_disease(self, code: str, name: str, description: str, recommendation: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE diseases SET name = ?, description = ?, recommendation = ? WHERE code = ?",
+                (name, description, recommendation, code)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error updating disease: {e}")
+            return False
+
+    def delete_disease(self, code: str) -> bool:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM diseases WHERE code = ?", (code,))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error deleting disease: {e}")
+            return False

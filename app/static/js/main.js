@@ -262,7 +262,12 @@ let currentUser = null;
 function openModal(modalId) {
   document.getElementById(modalId).classList.add('active');
   if (modalId === 'modal-admin') {
+    switchAdminTab('tab-users');
     loadUsers();
+    loadUserDiagnoses();
+    loadAdminSymptoms();
+    loadAdminDiseases();
+    loadAdminRules();
   } else if (modalId === 'modal-history') {
     loadHistory();
   }
@@ -477,6 +482,412 @@ async function loadUsers() {
     errorDiv.classList.add('active');
   }
 }
+
+// ============= ADMIN PANEL DASHBOARD CONTROLLERS =============
+
+function switchAdminTab(tabId) {
+  // Hide all contents
+  document.querySelectorAll('.admin-tab-content').forEach(el => {
+    el.classList.remove('active');
+  });
+  // Deactivate all buttons
+  document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show active content and set button active
+  document.getElementById(tabId).classList.add('active');
+  
+  // Find which button has onclick targeting this tabId and make it active
+  const targetBtn = Array.from(document.querySelectorAll('.admin-tab-btn')).find(btn => {
+    return btn.getAttribute('onclick').includes(tabId);
+  });
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+  }
+
+  // Close any open forms when switching tabs
+  closeSymptomForm();
+  closeDiseaseForm();
+  closeRuleForm();
+}
+
+// 1. User & All Diagnoses
+async function loadUserDiagnoses() {
+  const tbody = document.getElementById('admin-diagnoses-table-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memuat data diagnosa...</td></tr>';
+  
+  try {
+    const res = await fetch('/api/admin/user-diagnoses');
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Gagal memuat diagnosa pengguna.');
+    }
+    const diagnoses = await res.json();
+    tbody.innerHTML = '';
+    
+    if (diagnoses.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada riwayat diagnosa.</td></tr>';
+      return;
+    }
+
+    diagnoses.forEach(d => {
+      const tr = document.createElement('tr');
+      
+      // Symptoms string list
+      const syms = d.symptoms.map(s => `<code>${s.code}</code>`).join(', ');
+      
+      // Results list string
+      const results = d.result.map(r => `${r.nama} (${r.confidence}%)`).join(', ') || 'Tidak terdeteksi';
+      
+      // Date format
+      const date = new Date(d.created_at).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      tr.innerHTML = `
+        <td>${d.id}</td>
+        <td><strong>${d.username}</strong> <span style="font-size:10px; color:var(--dark-gray);">(ID: ${d.user_id})</span></td>
+        <td><div style="max-width:200px; overflow-wrap:break-word;">${syms}</div></td>
+        <td><div style="max-width:200px; overflow-wrap:break-word;">${results}</div></td>
+        <td>${date}</td>
+        <td>
+          <button class="btn-action" style="background:var(--red); color:var(--white);" onclick="deleteUserDiagnose(${d.id})">🗑️ Hapus</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+async function deleteUserDiagnose(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus hasil diagnosa user ini?')) return;
+  try {
+    const res = await fetch(`/api/admin/user-diagnoses/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus.');
+    
+    loadUserDiagnoses();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 2. Symptoms Tab
+async function loadAdminSymptoms() {
+  const tbody = document.getElementById('admin-sy-table-body');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data gejala...</td></tr>';
+  
+  try {
+    const res = await fetch('/api/admin/symptoms');
+    const symptoms = await res.json();
+    if (!res.ok) throw new Error(symptoms.error || 'Gagal memuat gejala.');
+    
+    tbody.innerHTML = '';
+    if (symptoms.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada gejala.</td></tr>';
+      return;
+    }
+
+    symptoms.forEach(s => {
+      const tr = document.createElement('tr');
+      // Escape strings
+      const descEscaped = s.description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const groupEscaped = s.disease_name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      tr.innerHTML = `
+        <td><code>${s.code}</code></td>
+        <td>${s.description}</td>
+        <td><span class="nav-badge" style="background:var(--cyan); box-shadow:none;">${s.disease_name}</span></td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" style="background:var(--yellow);" onclick="openEditSymptomForm('${s.code}', '${descEscaped}', '${groupEscaped}')">✏️ Edit</button>
+            <button class="btn-action" style="background:var(--red); color:var(--white);" onclick="deleteSymptom('${s.code}')">🗑️ Hapus</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openAddSymptomForm() {
+  document.getElementById('symptom-form-container').style.display = 'block';
+  document.getElementById('symptom-form-title').textContent = 'Tambah Gejala Baru';
+  document.getElementById('symptom-action').value = 'add';
+  document.getElementById('symptom-code').disabled = false;
+  document.getElementById('form-manage-symptom').reset();
+}
+
+function openEditSymptomForm(code, desc, diseaseName) {
+  document.getElementById('symptom-form-container').style.display = 'block';
+  document.getElementById('symptom-form-title').textContent = `Edit Gejala: ${code}`;
+  document.getElementById('symptom-action').value = 'edit';
+  document.getElementById('symptom-code').value = code;
+  document.getElementById('symptom-code').disabled = true;
+  document.getElementById('symptom-desc').value = desc;
+  document.getElementById('symptom-disease').value = diseaseName;
+}
+
+function closeSymptomForm() {
+  document.getElementById('symptom-form-container').style.display = 'none';
+  document.getElementById('form-manage-symptom').reset();
+}
+
+async function saveSymptom(e) {
+  e.preventDefault();
+  const action = document.getElementById('symptom-action').value;
+  const code = document.getElementById('symptom-code').value.trim();
+  const description = document.getElementById('symptom-desc').value.trim();
+  const disease_name = document.getElementById('symptom-disease').value.trim();
+
+  const url = action === 'add' ? '/api/admin/symptoms' : `/api/admin/symptoms/${code}`;
+  const method = action === 'add' ? 'POST' : 'PUT';
+
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, description, disease_name })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menyimpan gejala.');
+    
+    closeSymptomForm();
+    loadAdminSymptoms();
+    loadSymptoms(); // Refresh homepage symptoms list
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteSymptom(code) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus gejala ${code}?`)) return;
+  try {
+    const res = await fetch(`/api/admin/symptoms/${code}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus gejala.');
+    
+    loadAdminSymptoms();
+    loadSymptoms();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 3. Diseases Tab
+async function loadAdminDiseases() {
+  const tbody = document.getElementById('admin-di-table-body');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data penyakit...</td></tr>';
+  
+  try {
+    const res = await fetch('/api/admin/diseases');
+    const diseases = await res.json();
+    if (!res.ok) throw new Error(diseases.error || 'Gagal memuat penyakit.');
+    
+    tbody.innerHTML = '';
+    if (diseases.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada data penyakit.</td></tr>';
+      return;
+    }
+
+    diseases.forEach(d => {
+      const tr = document.createElement('tr');
+      // Escape strings for onclick handlers
+      const nameEscaped = d.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const descEscaped = d.description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const recoEscaped = d.recommendation.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      tr.innerHTML = `
+        <td><code>${d.code}</code></td>
+        <td><strong>${d.name}</strong></td>
+        <td><div style="max-height:80px; overflow-y:auto; font-size:12px;">${d.description}</div></td>
+        <td><div style="max-height:80px; overflow-y:auto; font-size:12px;">${d.recommendation}</div></td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" style="background:var(--yellow);" onclick="openEditDiseaseForm('${d.code}', '${nameEscaped}', '${descEscaped}', '${recoEscaped}')">✏️ Edit</button>
+            <button class="btn-action" style="background:var(--red); color:var(--white);" onclick="deleteDisease('${d.code}')">🗑️ Hapus</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openAddDiseaseForm() {
+  document.getElementById('disease-form-container').style.display = 'block';
+  document.getElementById('disease-form-title').textContent = 'Tambah Penyakit Baru';
+  document.getElementById('disease-action').value = 'add';
+  document.getElementById('disease-code').disabled = false;
+  document.getElementById('form-manage-disease').reset();
+}
+
+function openEditDiseaseForm(code, name, desc, reco) {
+  document.getElementById('disease-form-container').style.display = 'block';
+  document.getElementById('disease-form-title').textContent = `Edit Penyakit: ${code}`;
+  document.getElementById('disease-action').value = 'edit';
+  document.getElementById('disease-code').value = code;
+  document.getElementById('disease-code').disabled = true;
+  document.getElementById('disease-name').value = name;
+  document.getElementById('disease-desc').value = desc;
+  document.getElementById('disease-reco').value = reco;
+}
+
+function closeDiseaseForm() {
+  document.getElementById('disease-form-container').style.display = 'none';
+  document.getElementById('form-manage-disease').reset();
+}
+
+async function saveDisease(e) {
+  e.preventDefault();
+  const action = document.getElementById('disease-action').value;
+  const code = document.getElementById('disease-code').value.trim();
+  const name = document.getElementById('disease-name').value.trim();
+  const description = document.getElementById('disease-desc').value.trim();
+  const recommendation = document.getElementById('disease-reco').value.trim();
+
+  const url = action === 'add' ? '/api/admin/diseases' : `/api/admin/diseases/${code}`;
+  const method = action === 'add' ? 'POST' : 'PUT';
+
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, name, description, recommendation })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menyimpan penyakit.');
+    
+    closeDiseaseForm();
+    loadAdminDiseases();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteDisease(code) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus penyakit ${code}?`)) return;
+  try {
+    const res = await fetch(`/api/admin/diseases/${code}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus penyakit.');
+    
+    loadAdminDiseases();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 4. Rules Tab
+async function loadAdminRules() {
+  const tbody = document.getElementById('admin-ru-table-body');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data aturan...</td></tr>';
+  
+  try {
+    const res = await fetch('/api/admin/rules');
+    const rules = await res.json();
+    if (!res.ok) throw new Error(rules.error || 'Gagal memuat aturan.');
+    
+    tbody.innerHTML = '';
+    if (rules.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada aturan.</td></tr>';
+      return;
+    }
+
+    rules.forEach(r => {
+      const tr = document.createElement('tr');
+      const ant = r.antecedents.split(',').map(a => `<code>${a.trim()}</code>`).join(' ∧ ');
+      
+      tr.innerHTML = `
+        <td><strong>Rule #${r.id}</strong></td>
+        <td>IF ${ant}</td>
+        <td>THEN <code>${r.consequent}</code></td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-action" style="background:var(--yellow);" onclick="openEditRuleForm(${r.id}, '${r.antecedents}', '${r.consequent}')">✏️ Edit</button>
+            <button class="btn-action" style="background:var(--red); color:var(--white);" onclick="deleteRule(${r.id})">🗑️ Hapus</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function openAddRuleForm() {
+  document.getElementById('rule-form-container').style.display = 'block';
+  document.getElementById('rule-form-title').textContent = 'Tambah Aturan Baru';
+  document.getElementById('rule-action').value = 'add';
+  document.getElementById('rule-id').value = '';
+  document.getElementById('form-manage-rule').reset();
+}
+
+function openEditRuleForm(id, antecedents, consequent) {
+  document.getElementById('rule-form-container').style.display = 'block';
+  document.getElementById('rule-form-title').textContent = `Edit Aturan #${id}`;
+  document.getElementById('rule-action').value = 'edit';
+  document.getElementById('rule-id').value = id;
+  document.getElementById('rule-antecedents').value = antecedents;
+  document.getElementById('rule-consequent').value = consequent;
+}
+
+function closeRuleForm() {
+  document.getElementById('rule-form-container').style.display = 'none';
+  document.getElementById('form-manage-rule').reset();
+}
+
+async function saveRule(e) {
+  e.preventDefault();
+  const action = document.getElementById('rule-action').value;
+  const id = document.getElementById('rule-id').value;
+  const antecedents = document.getElementById('rule-antecedents').value.trim();
+  const consequent = document.getElementById('rule-consequent').value.trim();
+
+  const url = action === 'add' ? '/api/admin/rules' : `/api/admin/rules/${id}`;
+  const method = action === 'add' ? 'POST' : 'PUT';
+
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ antecedents, consequent })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menyimpan aturan.');
+    
+    closeRuleForm();
+    loadAdminRules();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deleteRule(id) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus aturan #${id}?`)) return;
+  try {
+    const res = await fetch(`/api/admin/rules/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus aturan.');
+    
+    loadAdminRules();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 
 // ============= RIWAYAT DIAGNOSA LOGIC =============
 async function loadHistory() {
