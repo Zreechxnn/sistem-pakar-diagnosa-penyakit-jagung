@@ -17,3 +17,25 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS symptoms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    disease_name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS diseases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    recommendation TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    antecedents TEXT NOT NULL, -- Comma-separated symptom codes
+    consequent TEXT NOT NULL -- Disease code or symptom code
+);
+
