@@ -1,5 +1,7 @@
 // ============= STATE =============
 let allSymptoms = [];
+let adminSymptomsList = [];
+let adminDiseasesList = [];
 const GROUP_COLORS = ['bulai','blight','leafrust','burn','stemborer','cobborer'];
 const GROUP_NAMES_LOWER = {
   'Bulai': 'bulai',
@@ -582,16 +584,22 @@ async function deleteUserDiagnose(id) {
 // 2. Symptoms Tab
 async function loadAdminSymptoms() {
   const tbody = document.getElementById('admin-sy-table-body');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data gejala...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data gejala...</td></tr>';
+  
+  const master = document.getElementById('check-all-symptoms');
+  if (master) master.checked = false;
+  const btn = document.getElementById('btn-delete-symptoms-batch');
+  if (btn) btn.style.display = 'none';
   
   try {
     const res = await fetch('/api/admin/symptoms');
     const symptoms = await res.json();
     if (!res.ok) throw new Error(symptoms.error || 'Gagal memuat gejala.');
     
+    adminSymptomsList = symptoms;
     tbody.innerHTML = '';
     if (symptoms.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada gejala.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada gejala.</td></tr>';
       return;
     }
 
@@ -602,6 +610,7 @@ async function loadAdminSymptoms() {
       const groupEscaped = s.disease_name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       
       tr.innerHTML = `
+        <td style="text-align: center;"><input type="checkbox" name="symptom-select" value="${s.code}" onchange="onSymptomSelectChange()"></td>
         <td><code>${s.code}</code></td>
         <td>${s.description}</td>
         <td><span class="nav-badge" style="background:var(--cyan); box-shadow:none;">${s.disease_name}</span></td>
@@ -615,11 +624,28 @@ async function loadAdminSymptoms() {
       tbody.appendChild(tr);
     });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function populateSymptomDiseaseDropdown() {
+  const selectEl = document.getElementById('symptom-disease');
+  if (!selectEl) return;
+  const currentVal = selectEl.value;
+  selectEl.innerHTML = '<option value="" disabled selected>-- Pilih Penyakit --</option>';
+  adminDiseasesList.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.name;
+    opt.textContent = d.name;
+    selectEl.appendChild(opt);
+  });
+  if (currentVal) {
+    selectEl.value = currentVal;
   }
 }
 
 function openAddSymptomForm() {
+  populateSymptomDiseaseDropdown();
   document.getElementById('symptom-form-container').style.display = 'block';
   document.getElementById('symptom-form-title').textContent = 'Tambah Gejala Baru';
   document.getElementById('symptom-action').value = 'add';
@@ -628,13 +654,31 @@ function openAddSymptomForm() {
 }
 
 function openEditSymptomForm(code, desc, diseaseName) {
+  populateSymptomDiseaseDropdown();
   document.getElementById('symptom-form-container').style.display = 'block';
   document.getElementById('symptom-form-title').textContent = `Edit Gejala: ${code}`;
   document.getElementById('symptom-action').value = 'edit';
   document.getElementById('symptom-code').value = code;
   document.getElementById('symptom-code').disabled = true;
   document.getElementById('symptom-desc').value = desc;
-  document.getElementById('symptom-disease').value = diseaseName;
+  
+  const selectEl = document.getElementById('symptom-disease');
+  if (selectEl) {
+    let exists = false;
+    for (let i = 0; i < selectEl.options.length; i++) {
+      if (selectEl.options[i].value === diseaseName) {
+        exists = true;
+        break;
+      }
+    }
+    if (!exists && diseaseName) {
+      const opt = document.createElement('option');
+      opt.value = diseaseName;
+      opt.textContent = diseaseName;
+      selectEl.appendChild(opt);
+    }
+    selectEl.value = diseaseName;
+  }
 }
 
 function closeSymptomForm() {
@@ -686,16 +730,23 @@ async function deleteSymptom(code) {
 // 3. Diseases Tab
 async function loadAdminDiseases() {
   const tbody = document.getElementById('admin-di-table-body');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data penyakit...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Memuat data penyakit...</td></tr>';
+  
+  const master = document.getElementById('check-all-diseases');
+  if (master) master.checked = false;
+  const btn = document.getElementById('btn-delete-diseases-batch');
+  if (btn) btn.style.display = 'none';
   
   try {
     const res = await fetch('/api/admin/diseases');
     const diseases = await res.json();
     if (!res.ok) throw new Error(diseases.error || 'Gagal memuat penyakit.');
     
+    adminDiseasesList = diseases;
+    populateSymptomDiseaseDropdown();
     tbody.innerHTML = '';
     if (diseases.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada data penyakit.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Tidak ada data penyakit.</td></tr>';
       return;
     }
 
@@ -707,6 +758,7 @@ async function loadAdminDiseases() {
       const recoEscaped = d.recommendation.replace(/'/g, "\\'").replace(/"/g, '&quot;');
       
       tr.innerHTML = `
+        <td style="text-align: center;"><input type="checkbox" name="disease-select" value="${d.code}" onchange="onDiseaseSelectChange()"></td>
         <td><code>${d.code}</code></td>
         <td><strong>${d.name}</strong></td>
         <td><div style="max-height:80px; overflow-y:auto; font-size:12px;">${d.description}</div></td>
@@ -721,7 +773,7 @@ async function loadAdminDiseases() {
       tbody.appendChild(tr);
     });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
   }
 }
 
@@ -792,7 +844,12 @@ async function deleteDisease(code) {
 // 4. Rules Tab
 async function loadAdminRules() {
   const tbody = document.getElementById('admin-ru-table-body');
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat data aturan...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Memuat data aturan...</td></tr>';
+  
+  const master = document.getElementById('check-all-rules');
+  if (master) master.checked = false;
+  const btn = document.getElementById('btn-delete-rules-batch');
+  if (btn) btn.style.display = 'none';
   
   try {
     const res = await fetch('/api/admin/rules');
@@ -801,7 +858,7 @@ async function loadAdminRules() {
     
     tbody.innerHTML = '';
     if (rules.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada aturan.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Tidak ada aturan.</td></tr>';
       return;
     }
 
@@ -810,6 +867,7 @@ async function loadAdminRules() {
       const ant = r.antecedents.split(',').map(a => `<code>${a.trim()}</code>`).join(' ∧ ');
       
       tr.innerHTML = `
+        <td style="text-align: center;"><input type="checkbox" name="rule-select" value="${r.id}" onchange="onRuleSelectChange()"></td>
         <td><strong>Rule #${r.id}</strong></td>
         <td>IF ${ant}</td>
         <td>THEN <code>${r.consequent}</code></td>
@@ -823,24 +881,105 @@ async function loadAdminRules() {
       tbody.appendChild(tr);
     });
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red);">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function populateRuleFormSelectors() {
+  // Populate Antecedents (IF Symptoms Checkboxes)
+  const container = document.getElementById('rule-antecedents-container');
+  if (container) {
+    container.innerHTML = '';
+    if (adminSymptomsList.length === 0) {
+      container.innerHTML = '<div style="color:var(--red); font-weight:700;">Gagal memuat gejala. Silakan buka tab Gejala terlebih dahulu atau refresh.</div>';
+    } else {
+      adminSymptomsList.forEach(s => {
+        const label = document.createElement('label');
+        label.style.display = 'flex';
+        label.style.alignItems = 'flex-start';
+        label.style.gap = '8px';
+        label.style.fontWeight = '600';
+        label.style.cursor = 'pointer';
+        label.style.fontSize = '14px';
+        label.style.background = 'var(--bg)';
+        label.style.border = '2px solid var(--black)';
+        label.style.padding = '8px';
+        label.style.marginBottom = '4px';
+        label.style.boxShadow = '2px 2px 0 var(--black)';
+        
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.name = 'rule-antecedent-item';
+        cb.value = s.code;
+        cb.style.marginTop = '3px';
+        
+        const codeSpan = document.createElement('span');
+        codeSpan.className = 'gejala-code';
+        codeSpan.textContent = s.code;
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = s.description;
+        
+        label.appendChild(cb);
+        label.appendChild(codeSpan);
+        label.appendChild(textSpan);
+        container.appendChild(label);
+      });
+    }
+  }
+
+  // Populate Consequent Diseases
+  const diseaseGroup = document.getElementById('rule-consequent-diseases');
+  if (diseaseGroup) {
+    diseaseGroup.innerHTML = '';
+    adminDiseasesList.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.code;
+      opt.textContent = `${d.code} - ${d.name}`;
+      diseaseGroup.appendChild(opt);
+    });
+  }
+
+  // Populate Consequent Symptoms
+  const symptomGroup = document.getElementById('rule-consequent-symptoms');
+  if (symptomGroup) {
+    symptomGroup.innerHTML = '';
+    adminSymptomsList.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.code;
+      opt.textContent = `${s.code} - ${s.description}`;
+      symptomGroup.appendChild(opt);
+    });
   }
 }
 
 function openAddRuleForm() {
+  populateRuleFormSelectors();
   document.getElementById('rule-form-container').style.display = 'block';
   document.getElementById('rule-form-title').textContent = 'Tambah Aturan Baru';
   document.getElementById('rule-action').value = 'add';
   document.getElementById('rule-id').value = '';
   document.getElementById('form-manage-rule').reset();
+  
+  // Uncheck all rule antecedents checkboxes
+  document.querySelectorAll('input[name="rule-antecedent-item"]').forEach(cb => {
+    cb.checked = false;
+  });
+  document.getElementById('rule-consequent').value = '';
 }
 
 function openEditRuleForm(id, antecedents, consequent) {
+  populateRuleFormSelectors();
   document.getElementById('rule-form-container').style.display = 'block';
   document.getElementById('rule-form-title').textContent = `Edit Aturan #${id}`;
   document.getElementById('rule-action').value = 'edit';
   document.getElementById('rule-id').value = id;
-  document.getElementById('rule-antecedents').value = antecedents;
+  
+  const antList = antecedents.split(',').map(s => s.trim());
+  document.querySelectorAll('input[name="rule-antecedent-item"]').forEach(cb => {
+    cb.checked = antList.includes(cb.value);
+  });
+  
   document.getElementById('rule-consequent').value = consequent;
 }
 
@@ -853,8 +992,22 @@ async function saveRule(e) {
   e.preventDefault();
   const action = document.getElementById('rule-action').value;
   const id = document.getElementById('rule-id').value;
-  const antecedents = document.getElementById('rule-antecedents').value.trim();
-  const consequent = document.getElementById('rule-consequent').value.trim();
+  
+  const checkedAnt = Array.from(document.querySelectorAll('input[name="rule-antecedent-item"]:checked'))
+    .map(cb => cb.value);
+    
+  if (checkedAnt.length === 0) {
+    alert('Pilih minimal satu gejala (IF)!');
+    return;
+  }
+  
+  const antecedents = checkedAnt.join(',');
+  const consequent = document.getElementById('rule-consequent').value;
+  
+  if (!consequent) {
+    alert('Pilih consequent (THEN)!');
+    return;
+  }
 
   const url = action === 'add' ? '/api/admin/rules' : `/api/admin/rules/${id}`;
   const method = action === 'add' ? 'POST' : 'PUT';
@@ -1027,6 +1180,142 @@ async function deleteHistory(id) {
   }
 }
 
+// ============= BATCH SELECTION & DELETION LOGIC =============
+
+// 1. Symptoms Bulk Delete
+function toggleSelectAllSymptoms(masterCb) {
+  const checkboxes = document.querySelectorAll('input[name="symptom-select"]');
+  checkboxes.forEach(cb => cb.checked = masterCb.checked);
+  onSymptomSelectChange();
+}
+
+function onSymptomSelectChange() {
+  const checkboxes = Array.from(document.querySelectorAll('input[name="symptom-select"]'));
+  const checked = checkboxes.filter(cb => cb.checked);
+  const btn = document.getElementById('btn-delete-symptoms-batch');
+  const master = document.getElementById('check-all-symptoms');
+  
+  if (master) {
+    master.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+  }
+  
+  if (btn) {
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+  }
+}
+
+async function deleteSymptomsBatch() {
+  const checked = Array.from(document.querySelectorAll('input[name="symptom-select"]:checked'))
+    .map(cb => cb.value);
+  if (checked.length === 0) return;
+  
+  if (!confirm(`Apakah Anda yakin ingin menghapus ${checked.length} gejala terpilih?`)) return;
+  
+  try {
+    const res = await fetch('/api/admin/symptoms/delete-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes: checked })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus gejala.');
+    
+    loadAdminSymptoms();
+    loadSymptoms(); // Refresh homepage symptoms list
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 2. Diseases Bulk Delete
+function toggleSelectAllDiseases(masterCb) {
+  const checkboxes = document.querySelectorAll('input[name="disease-select"]');
+  checkboxes.forEach(cb => cb.checked = masterCb.checked);
+  onDiseaseSelectChange();
+}
+
+function onDiseaseSelectChange() {
+  const checkboxes = Array.from(document.querySelectorAll('input[name="disease-select"]'));
+  const checked = checkboxes.filter(cb => cb.checked);
+  const btn = document.getElementById('btn-delete-diseases-batch');
+  const master = document.getElementById('check-all-diseases');
+  
+  if (master) {
+    master.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+  }
+  
+  if (btn) {
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+  }
+}
+
+async function deleteDiseasesBatch() {
+  const checked = Array.from(document.querySelectorAll('input[name="disease-select"]:checked'))
+    .map(cb => cb.value);
+  if (checked.length === 0) return;
+  
+  if (!confirm(`Apakah Anda yakin ingin menghapus ${checked.length} penyakit terpilih?`)) return;
+  
+  try {
+    const res = await fetch('/api/admin/diseases/delete-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codes: checked })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus penyakit.');
+    
+    loadAdminDiseases();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 3. Rules Bulk Delete
+function toggleSelectAllRules(masterCb) {
+  const checkboxes = document.querySelectorAll('input[name="rule-select"]');
+  checkboxes.forEach(cb => cb.checked = masterCb.checked);
+  onRuleSelectChange();
+}
+
+function onRuleSelectChange() {
+  const checkboxes = Array.from(document.querySelectorAll('input[name="rule-select"]'));
+  const checked = checkboxes.filter(cb => cb.checked);
+  const btn = document.getElementById('btn-delete-rules-batch');
+  const master = document.getElementById('check-all-rules');
+  
+  if (master) {
+    master.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+  }
+  
+  if (btn) {
+    btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+  }
+}
+
+async function deleteRulesBatch() {
+  const checked = Array.from(document.querySelectorAll('input[name="rule-select"]:checked'))
+    .map(cb => parseInt(cb.value));
+  if (checked.length === 0) return;
+  
+  if (!confirm(`Apakah Anda yakin ingin menghapus ${checked.length} aturan terpilih?`)) return;
+  
+  try {
+    const res = await fetch('/api/admin/rules/delete-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: checked })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal menghapus aturan.');
+    
+    loadAdminRules();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 // ============= INIT =============
 loadSymptoms();
 checkSession();
+

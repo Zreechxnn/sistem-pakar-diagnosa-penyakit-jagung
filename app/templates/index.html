@@ -244,7 +244,10 @@
           <div id="tab-symptoms" class="admin-tab-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h4 class="admin-sub-title" style="margin-bottom:0;">Daftar Gejala</h4>
-              <button class="btn-action" style="background:var(--lime);" onclick="openAddSymptomForm()">➕ Tambah Gejala</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-action" style="background:var(--red); color:var(--white); display:none;" id="btn-delete-symptoms-batch" onclick="deleteSymptomsBatch()">🗑️ Hapus Terpilih</button>
+                <button class="btn-action" style="background:var(--lime);" onclick="openAddSymptomForm()">➕ Tambah Gejala</button>
+              </div>
             </div>
 
             <!-- Form Add/Edit Symptom -->
@@ -262,7 +265,9 @@
                 </div>
                 <div class="form-group">
                   <label for="symptom-disease">Nama Penyakit (Kelompok)</label>
-                  <input type="text" id="symptom-disease" class="input-neobrutalist" placeholder="Bulai, Blight, dll." required>
+                  <select id="symptom-disease" class="input-neobrutalist" required>
+                    <option value="" disabled selected>-- Pilih Penyakit --</option>
+                  </select>
                 </div>
                 <div style="display:flex; gap:12px; margin-top:12px;">
                   <button type="submit" class="btn-action" style="background:var(--yellow);">Simpan</button>
@@ -275,6 +280,7 @@
               <table class="admin-table">
                 <thead>
                   <tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all-symptoms" onchange="toggleSelectAllSymptoms(this)"></th>
                     <th>Kode</th>
                     <th>Deskripsi</th>
                     <th>Kelompok Penyakit</th>
@@ -292,7 +298,10 @@
           <div id="tab-diseases" class="admin-tab-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h4 class="admin-sub-title" style="margin-bottom:0;">Daftar Penyakit</h4>
-              <button class="btn-action" style="background:var(--lime);" onclick="openAddDiseaseForm()">➕ Tambah Penyakit</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-action" style="background:var(--red); color:var(--white); display:none;" id="btn-delete-diseases-batch" onclick="deleteDiseasesBatch()">🗑️ Hapus Terpilih</button>
+                <button class="btn-action" style="background:var(--lime);" onclick="openAddDiseaseForm()">➕ Tambah Penyakit</button>
+              </div>
             </div>
 
             <!-- Form Add/Edit Disease -->
@@ -327,6 +336,7 @@
               <table class="admin-table">
                 <thead>
                   <tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all-diseases" onchange="toggleSelectAllDiseases(this)"></th>
                     <th>Kode</th>
                     <th>Nama Penyakit</th>
                     <th>Deskripsi</th>
@@ -345,7 +355,10 @@
           <div id="tab-rules" class="admin-tab-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h4 class="admin-sub-title" style="margin-bottom:0;">Aturan Forward Chaining</h4>
-              <button class="btn-action" style="background:var(--lime);" onclick="openAddRuleForm()">➕ Tambah Aturan</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn-action" style="background:var(--red); color:var(--white); display:none;" id="btn-delete-rules-batch" onclick="deleteRulesBatch()">🗑️ Hapus Terpilih</button>
+                <button class="btn-action" style="background:var(--lime);" onclick="openAddRuleForm()">➕ Tambah Aturan</button>
+              </div>
             </div>
 
             <!-- Form Add/Edit Rule -->
@@ -355,12 +368,22 @@
                 <input type="hidden" id="rule-action" value="add">
                 <input type="hidden" id="rule-id" value="">
                 <div class="form-group">
-                  <label for="rule-antecedents">IF (Gejala, pisahkan koma. Contoh: G1,G2)</label>
-                  <input type="text" id="rule-antecedents" class="input-neobrutalist" placeholder="G1,G2" required>
+                  <label>IF (Pilih Gejala / Antecedent)</label>
+                  <div id="rule-antecedents-container" class="input-neobrutalist" style="max-height: 180px; overflow-y: auto; background: var(--white); display: flex; flex-direction: column; gap: 8px; padding: 12px;">
+                    <!-- Akan diisi dinamis oleh JavaScript -->
+                  </div>
                 </div>
                 <div class="form-group">
-                  <label for="rule-consequent">THEN (Penyakit/Gejala, contoh: P001)</label>
-                  <input type="text" id="rule-consequent" class="input-neobrutalist" placeholder="P001" required>
+                  <label for="rule-consequent">THEN (Pilih Penyakit atau Gejala / Consequent)</label>
+                  <select id="rule-consequent" class="input-neobrutalist" required>
+                    <option value="" disabled selected>-- Pilih Penyakit / Gejala --</option>
+                    <optgroup label="Penyakit (Diseases)" id="rule-consequent-diseases">
+                      <!-- Penyakit dimuat dinamis -->
+                    </optgroup>
+                    <optgroup label="Gejala (Symptoms)" id="rule-consequent-symptoms">
+                      <!-- Gejala dimuat dinamis -->
+                    </optgroup>
+                  </select>
                 </div>
                 <div style="display:flex; gap:12px; margin-top:12px;">
                   <button type="submit" class="btn-action" style="background:var(--yellow);">Simpan</button>
@@ -373,6 +396,7 @@
               <table class="admin-table">
                 <thead>
                   <tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="check-all-rules" onchange="toggleSelectAllRules(this)"></th>
                     <th>ID</th>
                     <th>IF (Antecedent)</th>
                     <th>THEN (Consequent)</th>

@@ -434,3 +434,73 @@ def admin_delete_user_diagnose(diagnose_id):
         return jsonify({'message': 'Hasil diagnosa user berhasil dihapus.'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Batch deletion endpoints
+@api_bp.route('/admin/symptoms/delete-batch', methods=['POST'])
+def admin_delete_symptoms_batch():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'codes' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    codes = data['codes']
+    if not isinstance(codes, list):
+        return jsonify({'error': 'Format data salah.'}), 400
+        
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.executemany("DELETE FROM symptoms WHERE code = ?", [(c,) for c in codes])
+        conn.commit()
+        conn.close()
+        return jsonify({'message': f'{len(codes)} gejala berhasil dihapus.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/admin/diseases/delete-batch', methods=['POST'])
+def admin_delete_diseases_batch():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'codes' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    codes = data['codes']
+    if not isinstance(codes, list):
+        return jsonify({'error': 'Format data salah.'}), 400
+        
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.executemany("DELETE FROM diseases WHERE code = ?", [(c,) for c in codes])
+        conn.commit()
+        conn.close()
+        return jsonify({'message': f'{len(codes)} penyakit berhasil dihapus.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/admin/rules/delete-batch', methods=['POST'])
+def admin_delete_rules_batch():
+    if not is_admin():
+        return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
+    data = request.get_json()
+    if not data or 'ids' not in data:
+        return jsonify({'error': 'Data tidak lengkap.'}), 400
+    
+    ids = data['ids']
+    if not isinstance(ids, list):
+        return jsonify({'error': 'Format data salah.'}), 400
+        
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.executemany("DELETE FROM rules WHERE id = ?", [(rid,) for rid in ids])
+        conn.commit()
+        conn.close()
+        return jsonify({'message': f'{len(ids)} aturan berhasil dihapus.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
