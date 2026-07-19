@@ -1,11 +1,11 @@
-import sqlite3
+from app.db import Database
 from typing import List, Tuple, Dict
 from config import Config
 
 class DiseaseRepository:
     def __init__(self):
         # Fallback/cache details in case DB queries fail or during init
-        self._disease_details: Dict[str, Dict[str, str]] = {
+        self._disease_details = {
             'P001': {
                 'nama': 'Bulai',
                 'deskripsi': 'Penyakit bulai disebabkan oleh jamur Peronosclerospora spp. Menyerang daun muda, menyebabkan klorosis sistemik, pertumbuhan terhambat, dan dapat menyebabkan gagal panen jika tidak dikendalikan.',
@@ -39,9 +39,7 @@ class DiseaseRepository:
         }
 
     def _get_conn(self):
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
-        return conn
+        return Database.get_connection()
 
     def get_symptom_groups(self) -> List[Tuple[str, List[str]]]:
         """Mengembalikan semua gejala dikelompokkan per penyakit."""
