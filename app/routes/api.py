@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-import sqlite3
+from app.db import Database
 import json
 from app.services.disease_repo import DiseaseRepository
 from app.services.knowledge_base import KnowledgeBase
@@ -118,7 +118,7 @@ def diagnose():
     # Simpan riwayat jika user sudah login
     if 'user_id' in session:
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
+            conn = Database.get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO diagnoses (user_id, symptoms, result) VALUES (?, ?, ?)",
@@ -139,8 +139,8 @@ def get_diagnoses():
         return jsonify({'error': 'Akses ditolak. Harap login terlebih dahulu.'}), 401
     
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = Database.get_connection()
+        # row_factory handled by wrapper
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id, symptoms, result, created_at FROM diagnoses WHERE user_id = ? ORDER BY created_at DESC",
@@ -169,7 +169,7 @@ def delete_diagnose(diagnose_id):
         return jsonify({'error': 'Akses ditolak. Harap login terlebih dahulu.'}), 401
         
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn = Database.get_connection()
         cursor = conn.cursor()
         
         # Pastikan data milik user tersebut
@@ -208,8 +208,8 @@ def admin_get_symptoms():
     if not is_admin():
         return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = Database.get_connection()
+        # row_factory handled by wrapper
         cursor = conn.cursor()
         cursor.execute("SELECT id, code, description, disease_name FROM symptoms ORDER BY id ASC")
         rows = cursor.fetchall()
@@ -270,8 +270,8 @@ def admin_get_diseases():
     if not is_admin():
         return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = Database.get_connection()
+        # row_factory handled by wrapper
         cursor = conn.cursor()
         cursor.execute("SELECT id, code, name, description, recommendation FROM diseases ORDER BY id ASC")
         rows = cursor.fetchall()
@@ -334,8 +334,8 @@ def admin_get_rules():
     if not is_admin():
         return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = Database.get_connection()
+        # row_factory handled by wrapper
         cursor = conn.cursor()
         cursor.execute("SELECT id, antecedents, consequent FROM rules ORDER BY id ASC")
         rows = cursor.fetchall()
@@ -395,8 +395,8 @@ def admin_get_user_diagnoses():
     if not is_admin():
         return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = Database.get_connection()
+        # row_factory handled by wrapper
         cursor = conn.cursor()
         cursor.execute(
             """SELECT d.id, d.user_id, u.username, d.symptoms, d.result, d.created_at 
@@ -426,7 +426,7 @@ def admin_delete_user_diagnose(diagnose_id):
     if not is_admin():
         return jsonify({'error': 'Akses ditolak. Hanya untuk Admin.'}), 403
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn = Database.get_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM diagnoses WHERE id = ?", (diagnose_id,))
         conn.commit()
@@ -450,7 +450,7 @@ def admin_delete_symptoms_batch():
         return jsonify({'error': 'Format data salah.'}), 400
         
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn = Database.get_connection()
         cursor = conn.cursor()
         cursor.executemany("DELETE FROM symptoms WHERE code = ?", [(c,) for c in codes])
         conn.commit()
@@ -473,7 +473,7 @@ def admin_delete_diseases_batch():
         return jsonify({'error': 'Format data salah.'}), 400
         
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn = Database.get_connection()
         cursor = conn.cursor()
         cursor.executemany("DELETE FROM diseases WHERE code = ?", [(c,) for c in codes])
         conn.commit()
@@ -496,7 +496,7 @@ def admin_delete_rules_batch():
         return jsonify({'error': 'Format data salah.'}), 400
         
     try:
-        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn = Database.get_connection()
         cursor = conn.cursor()
         cursor.executemany("DELETE FROM rules WHERE id = ?", [(rid,) for rid in ids])
         conn.commit()

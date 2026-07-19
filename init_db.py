@@ -1,25 +1,37 @@
-import sqlite3
 import os
 from werkzeug.security import generate_password_hash
 from config import Config
+from app.db import Database
 
 def init_db():
-    db_path = Config.DATABASE_PATH
-    schema_path = os.path.join(Config.BASE_DIR, 'schema.sql')
-    
-    print(f"Menginisialisasi database di: {db_path}")
-    print(f"Membaca skema dari: {schema_path}")
+    is_pg = Database.is_postgres()
+    if is_pg:
+        schema_path = os.path.join(Config.BASE_DIR, 'schema_pg.sql')
+        print(f"Menginisialisasi database PostgreSQL menggunakan: {schema_path}")
+    else:
+        db_path = Config.DATABASE_PATH
+        schema_path = os.path.join(Config.BASE_DIR, 'schema.sql')
+        print(f"Menginisialisasi database SQLite di: {db_path}")
+        print(f"Membaca skema dari: {schema_path}")
     
     if not os.path.exists(schema_path):
-        print("Error: File schema.sql tidak ditemukan!")
+        print(f"Error: File {schema_path} tidak ditemukan!")
         return
         
-    conn = sqlite3.connect(db_path)
+    conn = Database.get_connection()
     cursor = conn.cursor()
     
-    # Jalankan schema.sql
+    # Jalankan schema
     with open(schema_path, 'r') as f:
         schema_sql = f.read()
+        
+    if is_pg:
+        cursor.execute(schema_sql)
+        conn.commit()
+        conn.close()
+        print("Inisialisasi database PostgreSQL selesai!")
+        return
+        
     cursor.executescript(schema_sql)
     
     # Seed default user jika belum ada

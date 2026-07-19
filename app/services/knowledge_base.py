@@ -1,4 +1,4 @@
-import sqlite3
+from app.db import Database
 from typing import List
 from config import Config
 
@@ -17,7 +17,7 @@ class Rule:
 
 
 class KnowledgeBase:
-    """Membaca dan menyimpan aturan dari database SQLite."""
+    """Membaca dan menyimpan aturan dari database SQLite/PostgreSQL."""
     def __init__(self, file_path: str = None):
         # file_path parameter kept for backward compatibility if instantiated elsewhere
         pass
@@ -25,8 +25,7 @@ class KnowledgeBase:
     def get_rules(self) -> List[Rule]:
         rules = []
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
-            conn.row_factory = sqlite3.Row
+            conn = Database.get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT id, antecedents, consequent FROM rules ORDER BY id ASC")
             rows = cursor.fetchall()
@@ -42,7 +41,7 @@ class KnowledgeBase:
     # API CRUD Helper Methods
     def add_rule(self, antecedents: str, consequent: str) -> bool:
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
+            conn = Database.get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO rules (antecedents, consequent) VALUES (?, ?)",
@@ -57,7 +56,7 @@ class KnowledgeBase:
 
     def update_rule(self, rule_id: int, antecedents: str, consequent: str) -> bool:
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
+            conn = Database.get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE rules SET antecedents = ?, consequent = ? WHERE id = ?",
@@ -72,7 +71,7 @@ class KnowledgeBase:
 
     def delete_rule(self, rule_id: int) -> bool:
         try:
-            conn = sqlite3.connect(Config.DATABASE_PATH)
+            conn = Database.get_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
             conn.commit()
